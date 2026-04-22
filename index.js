@@ -1,45 +1,49 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch"; // Asegúrate de tenerlo o usa el fetch nativo de Node 18+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => res.send("Jarvis con Motor Llama-3 Activo 🚀"));
+app.get("/", (req, res) => res.send("Motor Jarvis Llama-3 Listo 🦾"));
 
 app.post("/chat", async (req, res) => {
   try {
     const { prompt } = req.body;
     const HF_TOKEN = process.env.HF_TOKEN;
 
-    if (!HF_TOKEN) return res.status(500).json({ respuesta: "Falta HF_TOKEN" });
+    if (!HF_TOKEN) {
+      return res.status(500).json({ respuesta: "Error: Falta el Token de Hugging Face" });
+    }
 
-    // Llamada a Hugging Face (Modelo Llama 3)
+    // Usamos el fetch nativo de Node.js
     const response = await fetch(
       "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
       {
-        headers: { Authorization: `Bearer ${HF_TOKEN}`, "Content-Type": "application/json" },
+        headers: { 
+          "Authorization": `Bearer ${HF_TOKEN}`, 
+          "Content-Type": "application/json" 
+        },
         method: "POST",
         body: JSON.stringify({
-          inputs: `Responde como Jarvis de Iron Man, breve y técnico: ${prompt}`,
-          parameters: { max_new_tokens: 250 }
+          inputs: `System: Responde como Jarvis, el asistente de Iron Man. Sé breve, técnico y en español. User: ${prompt} Assistant:`,
+          parameters: { max_new_tokens: 200, return_full_text: false }
         }),
       }
     );
 
-    const result = await response.json();
+    const data = await response.json();
     
-    // Hugging Face devuelve un array, extraemos el texto
-    let textoFinal = result[0]?.generated_text || "Error al generar respuesta";
-    
-    // Limpiamos el texto para que no repita el prompt
-    textoFinal = textoFinal.replace(`Responde como Jarvis de Iron Man, breve y técnico: ${prompt}`, "").trim();
+    // Hugging Face a veces devuelve un array o un objeto de error
+    if (data.error) {
+      return res.status(500).json({ respuesta: "Hugging Face dice: " + data.error });
+    }
 
-    return res.json({ respuesta: textoFinal });
+    const respuestaIA = data[0]?.generated_text || "Lo siento señor, el motor no respondió.";
+    return res.json({ respuesta: respuestaIA.trim() });
 
   } catch (error) {
-    return res.status(500).json({ respuesta: "Error en motor: " + error.message });
+    return res.status(500).json({ respuesta: "Fallo en el sistema: " + error.message });
   }
 });
 
