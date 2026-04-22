@@ -4,56 +4,65 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 
-// Configuraciones iniciales
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Ruta de diagnóstico (para ver si el servidor vive)
+// Ruta de prueba
 app.get("/", (req, res) => {
   res.send("Jarvis operativo 🚀");
 });
 
-// Ruta principal del chat
+// CHAT
 app.post("/chat", async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const prompt = req.body?.prompt;
     const API_KEY = process.env.GEMINI_API_KEY;
 
-    // 1. Validar que la clave exista en Vercel
+    // Validar API KEY
     if (!API_KEY) {
-      return res.status(500).json({ 
-        respuesta: "Error: No se encontró la GEMINI_API_KEY en el servidor." 
+      return res.status(500).json({
+        respuesta: "❌ Falta GEMINI_API_KEY en Vercel"
       });
     }
 
-    // 2. Validar que el usuario envió texto
+    // Validar prompt
     if (!prompt) {
-      return res.status(400).json({ 
-        respuesta: "No recibí texto para procesar." 
+      return res.status(400).json({
+        respuesta: "❌ No recibí texto"
       });
     }
 
-    // 3. Configurar la IA (Modelo estable para evitar errores 404)
+    // IA CONFIGURACIÓN (MODELO COMPATIBLE)
     const genAI = new GoogleGenerativeAI(API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const instruccion = `Responde como Jarvis (asistente de Iron Man), sé breve, técnico y en español: ${prompt}`;
+    const model = genAI.getGenerativeModel({
+      model: "gemini-pro"
+    });
 
-    // 4. Generar respuesta
+    const instruccion = `
+Eres Jarvis, asistente estilo Iron Man.
+Responde breve, técnico y en español:
+
+${prompt}
+`;
+
     const result = await model.generateContent(instruccion);
     const response = await result.response;
     const text = response.text();
 
-    return res.json({ respuesta: text });
+    return res.json({
+      respuesta: text
+    });
 
   } catch (error) {
-    console.error("ERROR CRÍTICO:", error.message);
-    
-    // Devolvemos el error real para que puedas verlo en tu chat
+    console.error("ERROR COMPLETO:", error);
+
     return res.status(500).json({
-      respuesta: "Error en núcleo: " + error.message
+      respuesta: "Error en núcleo: " + (error.message || "desconocido")
     });
   }
 });
 
+// EXPORT PARA VERCEL
 export default app;
