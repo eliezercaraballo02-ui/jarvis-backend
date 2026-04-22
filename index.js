@@ -7,41 +7,54 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Ruta para verificar que el servidor vive
+// Cache del modelo (IMPORTANTE)
+const KEY = process.env.GEMINI_API_KEY;
+
+const genAI = KEY ? new GoogleGenerativeAI(KEY) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
+
 app.get("/", (req, res) => {
     res.send("Jarvis operativo en Vercel 🚀");
 });
 
 app.post("/chat", async (req, res) => {
     try {
-        const { prompt } = req.body;
-        const KEY = process.env.GEMINI_API_KEY;
+        const prompt = req.body?.prompt;
 
-        // Validaciones iniciales
         if (!KEY) {
-            return res.status(500).json({ respuesta: "Error: Clave API no configurada en Vercel." });
+            return res.status(500).json({
+                respuesta: "❌ API KEY no configurada en Vercel"
+            });
+        }
+
+        if (!model) {
+            return res.status(500).json({
+                respuesta: "❌ Modelo no inicializado"
+            });
         }
 
         if (!prompt) {
-            return res.status(400).json({ respuesta: "No recibí texto para procesar." });
+            return res.status(400).json({
+                respuesta: "No recibí texto"
+            });
         }
 
-        // Inicialización de la IA
-        const genAI = new GoogleGenerativeAI(KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const instruccion = `Responde como Jarvis (asistente de Iron Man), sé breve, técnico y siempre en español: ${prompt}`;
+        const instruccion = `Responde como Jarvis, breve y técnico en español: ${prompt}`;
 
         const result = await model.generateContent(instruccion);
+
         const response = await result.response;
-        const text = response.text();
+
+        // 🔥 PROTECCIÓN ANTI-CRASH
+        const text = response?.text?.() || "No pude generar respuesta";
 
         return res.json({ respuesta: text });
 
     } catch (error) {
-        console.error("Error crítico:", error.message);
+        console.error("ERROR COMPLETO:", error);
+
         return res.status(500).json({
-            respuesta: "Error en el núcleo: " + error.message
+            respuesta: "Error en núcleo: " + (error.message || "desconocido")
         });
     }
 });
