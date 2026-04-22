@@ -3,9 +3,10 @@ const cors = require('cors');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
-app.use(cors()); // Esto permite que tu GitHub Pages se conecte sin errores
+app.use(cors()); 
 app.use(express.json());
 
+// REEMPLAZA CON TU API KEY REAL
 const genAI = new GoogleGenerativeAI("TU_API_KEY_DE_GOOGLE");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -20,5 +21,5 @@ app.post('/chat', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor Jarvis en puerto ${PORT}`));
+// Esto es lo que cambia: Vercel necesita que exportes 'app'
+module.exports = app;
