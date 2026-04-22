@@ -3,66 +3,35 @@ import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Ruta de prueba
-app.get("/", (req, res) => {
-  res.send("Jarvis operativo 🚀");
-});
+app.get("/", (req, res) => res.send("Jarvis en línea 🚀"));
 
-// CHAT
 app.post("/chat", async (req, res) => {
   try {
-    const prompt = req.body?.prompt;
+    const { prompt } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY;
 
-    // Validar API KEY
-    if (!API_KEY) {
-      return res.status(500).json({
-        respuesta: "❌ Falta GEMINI_API_KEY en Vercel"
-      });
-    }
+    if (!API_KEY) return res.status(500).json({ respuesta: "Falta API_KEY" });
 
-    // Validar prompt
-    if (!prompt) {
-      return res.status(400).json({
-        respuesta: "❌ No recibí texto"
-      });
-    }
-
-    // IA CONFIGURACIÓN (MODELO COMPATIBLE)
+    // FORZAMOS LA VERSIÓN 1 (v1) para evitar el error 404 de la v1beta
     const genAI = new GoogleGenerativeAI(API_KEY);
+    
+    const model = genAI.getGenerativeModel(
+      { model: "gemini-1.5-flash" }, 
+      { apiVersion: 'v1' }
+    );
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-pro"
-    });
-
-    const instruccion = `
-Eres Jarvis, asistente estilo Iron Man.
-Responde breve, técnico y en español:
-
-${prompt}
-`;
-
-    const result = await model.generateContent(instruccion);
+    const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
-
-    return res.json({
-      respuesta: text
-    });
+    
+    return res.json({ respuesta: response.text() });
 
   } catch (error) {
-    console.error("ERROR COMPLETO:", error);
-
-    return res.status(500).json({
-      respuesta: "Error en núcleo: " + (error.message || "desconocido")
-    });
+    console.error("ERROR DETECTADO:", error.message);
+    return res.status(500).json({ respuesta: "Error de conexión: " + error.message });
   }
 });
 
-// EXPORT PARA VERCEL
 export default app;
