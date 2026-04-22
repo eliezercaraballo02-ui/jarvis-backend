@@ -11,7 +11,7 @@ app.use(express.json());
 const KEY = process.env.GEMINI_API_KEY;
 
 const genAI = KEY ? new GoogleGenerativeAI(KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-pro" }) : null;
 
 app.get("/", (req, res) => {
     res.send("Jarvis operativo en Vercel 🚀");
