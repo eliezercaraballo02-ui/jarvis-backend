@@ -7,6 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ruta para verificar que el servidor vive
 app.get("/", (req, res) => {
     res.send("Jarvis operativo en Vercel 🚀");
 });
@@ -14,10 +15,9 @@ app.get("/", (req, res) => {
 app.post("/chat", async (req, res) => {
     try {
         const { prompt } = req.body;
-        
-        // 1. Obtenemos la clave justo cuando llega el mensaje
         const KEY = process.env.GEMINI_API_KEY;
 
+        // Validaciones iniciales
         if (!KEY) {
             return res.status(500).json({ respuesta: "Error: Clave API no configurada en Vercel." });
         }
@@ -26,7 +26,7 @@ app.post("/chat", async (req, res) => {
             return res.status(400).json({ respuesta: "No recibí texto para procesar." });
         }
 
-        // 2. Inicializamos el modelo dentro del bloque try
+        // Inicialización de la IA
         const genAI = new GoogleGenerativeAI(KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
