@@ -5,14 +5,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => res.send("Sistema Jarvis Kappa: Motor Llama-3 🦾"));
+app.get("/", (req, res) => res.status(200).json({ mensaje: "Servidor OK" }));
 
 app.post("/chat", async (req, res) => {
+  // Aseguramos que la cabecera siempre sea JSON
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const { prompt } = req.body;
     const HF_TOKEN = process.env.HF_TOKEN;
 
-    if (!HF_TOKEN) return res.status(500).json({ respuesta: "Falta HF_TOKEN en el servidor." });
+    if (!HF_TOKEN) {
+      return res.status(500).json({ respuesta: "Falta el token HF_TOKEN en el servidor." });
+    }
 
     const response = await fetch(
       "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
@@ -30,21 +35,19 @@ app.post("/chat", async (req, res) => {
     );
 
     const data = await response.json();
-    console.log("Respuesta bruta de la API:", JSON.stringify(data));
 
-    // Validar si la API está cargando el modelo (Error 503)
-    if (data.error && data.estimated_time) {
-      return res.status(503).json({ respuesta: "Señor, los sistemas están calentando. Reintente en 20 segundos." });
+    // Si Hugging Face devuelve error de carga (503)
+    if (data.error) {
+      return res.status(200).json({ respuesta: "Sistemas cargando, señor. Reintente en un momento." });
     }
 
-    // Hugging Face devuelve un array con el texto generado
-    const textoFinal = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Error de formato.");
-
-    return res.json({ respuesta: textoFinal.replace(prompt, "").trim() });
+    const textoIA = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Sin respuesta.");
+    
+    return res.json({ respuesta: textoIA.replace(prompt, "").trim() });
 
   } catch (error) {
-    console.error("Error en /chat:", error.message);
-    return res.status(500).json({ respuesta: "Fallo de energía: " + error.message });
+    console.error("Error crítico:", error);
+    return res.status(500).json({ respuesta: "Fallo de conexión: " + error.message });
   }
 });
 
