@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; connect-src 'self' https://jarvis-backend-kappa.vercel.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.run; style-src 'self' 'unsafe-inline';"
+        }
+      ]
+    }
+  ]
+}
