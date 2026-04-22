@@ -5,18 +5,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => res.send("Motor Jarvis Llama-3 Listo 🦾"));
+app.get("/", (req, res) => res.send("Sistema Jarvis Kappa: Motor Llama-3 🦾"));
 
 app.post("/chat", async (req, res) => {
   try {
     const { prompt } = req.body;
     const HF_TOKEN = process.env.HF_TOKEN;
 
-    if (!HF_TOKEN) {
-      return res.status(500).json({ respuesta: "Error: Falta el Token de Hugging Face" });
-    }
+    if (!HF_TOKEN) return res.status(500).json({ respuesta: "Falta HF_TOKEN en el servidor." });
 
-    // Usamos el fetch nativo de Node.js
     const response = await fetch(
       "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
       {
@@ -26,24 +23,28 @@ app.post("/chat", async (req, res) => {
         },
         method: "POST",
         body: JSON.stringify({
-          inputs: `System: Responde como Jarvis, el asistente de Iron Man. Sé breve, técnico y en español. User: ${prompt} Assistant:`,
-          parameters: { max_new_tokens: 200, return_full_text: false }
+          inputs: prompt,
+          parameters: { max_new_tokens: 150 }
         }),
       }
     );
 
     const data = await response.json();
-    
-    // Hugging Face a veces devuelve un array o un objeto de error
-    if (data.error) {
-      return res.status(500).json({ respuesta: "Hugging Face dice: " + data.error });
+    console.log("Respuesta bruta de la API:", JSON.stringify(data));
+
+    // Validar si la API está cargando el modelo (Error 503)
+    if (data.error && data.estimated_time) {
+      return res.status(503).json({ respuesta: "Señor, los sistemas están calentando. Reintente en 20 segundos." });
     }
 
-    const respuestaIA = data[0]?.generated_text || "Lo siento señor, el motor no respondió.";
-    return res.json({ respuesta: respuestaIA.trim() });
+    // Hugging Face devuelve un array con el texto generado
+    const textoFinal = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Error de formato.");
+
+    return res.json({ respuesta: textoFinal.replace(prompt, "").trim() });
 
   } catch (error) {
-    return res.status(500).json({ respuesta: "Fallo en el sistema: " + error.message });
+    console.error("Error en /chat:", error.message);
+    return res.status(500).json({ respuesta: "Fallo de energía: " + error.message });
   }
 });
 
