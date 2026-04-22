@@ -26,9 +26,8 @@ app.post("/chat", async (req, res) => {
       });
     }
 
-    // 🔥 MODELO ESTABLE (IMPORTANTE)
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large",
+      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
       {
         method: "POST",
         headers: {
@@ -37,33 +36,33 @@ app.post("/chat", async (req, res) => {
         },
         body: JSON.stringify({
           inputs: prompt,
+          parameters: {
+            max_new_tokens: 150
+          }
         }),
       }
     );
 
     const data = await response.json();
 
-    // 🔥 Manejo de errores HF
-    if (!Array.isArray(data)) {
-      return res.json({
-        respuesta: "Modelo cargando o error: " + JSON.stringify(data),
-      });
-    }
-
+    // Manejo seguro de respuesta
     const text =
-      data[0]?.generated_text || "No pude generar respuesta";
+      data?.[0]?.generated_text ||
+      data?.generated_text ||
+      "No pude generar respuesta";
 
     return res.json({
-      respuesta: text,
+      respuesta: text
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("ERROR:", error);
 
     return res.status(500).json({
-      respuesta: "Error interno: " + error.message,
+      respuesta: "Error interno: " + error.message
     });
   }
 });
+
 
 export default app;
